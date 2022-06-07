@@ -29,6 +29,7 @@
 #include <thread>
 #include <chrono>
 #include <functional>
+#include <iostream>
 
 namespace livox_ros {
 using namespace std;
@@ -57,11 +58,11 @@ int32_t TimeSync::InitTimeSync(const TimeSyncConfig& config) {
     if ((baudrate_index < BRUnkown) && (parity_index < ParityUnkown)) {
       uart_ = new UserUart(baudrate_index, parity_index);
     } else {
-      printf("Uart parameter error, please check the configuration file!\n");
+      std::printf("Uart parameter error, please check the configuration file!\n");
       return -1;
     }
   } else {
-    printf("Device type not supported, now only uart is supported!\n");
+    std::printf("Device type not supported, now only uart is supported!\n");
     return -1;
   }
 
