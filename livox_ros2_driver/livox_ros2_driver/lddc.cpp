@@ -320,6 +320,8 @@ uint32_t Lddc::PublishPointcloudData(LidarDataQueue *queue, uint32_t packet_num,
     std::dynamic_pointer_cast<rclcpp::Publisher<sensor_msgs::msg::PointCloud2>>
     (GetCurrentPublisher(handle));
   if (kOutputToRos == output_type_) {
+    // override Livox time definition
+    cloud.header.stamp = cur_node_->now().nanoseconds();
     sensor_msgs::msg::PointCloud2 cloud_ros;
     pcl::toROSMsg(cloud,cloud_ros);
     publisher->publish(cloud_ros);
