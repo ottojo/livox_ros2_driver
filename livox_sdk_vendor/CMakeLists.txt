@@ -15,7 +15,7 @@ macro(build_livox_sdk)
 
   include(ExternalProject)
   externalproject_add(livox-sdk-${livox_sdk_REV}
-    GIT_REPOSITORY https://github.com/Marcus-D-Forte/Livox-SDK.git
+    GIT_REPOSITORY https://github.com/ottojo/Livox-SDK.git
     GIT_TAG master
     GIT_SHALLOW OFF
     TIMEOUT 60
