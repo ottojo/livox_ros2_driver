@@ -52,6 +52,7 @@ typedef enum {
   kLivoxCustomMsg = 1,
   kPclPxyziMsg = 2,
   kLivoxImuMsg = 3,
+  kExtendedPointCloud2Msg = 4,
 } MessageTypeOfTransfer;
 
 class Lddc {
@@ -77,6 +78,8 @@ class Lddc {
                               uint64_t *start_time,
                               StoragePacket *storage_packet);
   uint32_t PublishPointcloud2(LidarDataQueue *queue, uint32_t packet_num,
+                              uint8_t handle);
+  uint32_t PublishExtendedPointcloud2(LidarDataQueue *queue, uint32_t packet_num,
                               uint8_t handle);
   uint32_t PublishPointcloudData(LidarDataQueue *queue, uint32_t packet_num,
                                  uint8_t handle);

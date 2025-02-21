@@ -27,6 +27,7 @@
 #ifndef LIVOX_ROS_DRIVER_LDS_H_
 #define LIVOX_ROS_DRIVER_LDS_H_
 
+#include <cstdint>
 #include <math.h>
 #include <stdint.h>
 #include <stdio.h>
@@ -222,6 +223,17 @@ typedef struct {
   uint8_t line;       /**< Laser line id     */
 } LivoxPointXyzrtl;
 
+typedef struct {
+  float x;            /**< X axis, Unit:m */
+  float y;            /**< Y axis, Unit:m */
+  float z;            /**< Z axis, Unit:m */
+  float reflectivity; /**< Reflectivity   */
+  uint32_t time;
+  uint8_t tag;        /**< Livox point tag   */
+  uint8_t line;       /**< Laser line id     */
+} LivoxPointXYZRTagLTime;
+
+
 #pragma pack()
 
 typedef uint8_t *(*PointConvertHandler)(uint8_t *point_buf, \
@@ -258,12 +270,14 @@ const ProductTypePointInfoPair product_type_info_pair_table[kMaxProductType] = {
  */
 bool IsFilePathValid(const char *path_str);
 uint64_t RawLdsStampToNs(LdsStamp &timestamp, uint8_t timestamp_type);
+uint64_t GetEthPacketTimestamp(LivoxEthPacket *raw_packet, uint8_t data_src, uint64_t time_rcv);
 uint64_t GetStoragePacketTimestamp(StoragePacket *packet, uint8_t data_src);
 uint32_t CalculatePacketQueueSize(uint32_t interval_ms, uint8_t product_type,
                                   uint8_t data_type);
 void ParseCommandlineInputBdCode(const char *cammandline_str,
                                  std::vector<std::string> &bd_code_list);
 PointConvertHandler GetConvertHandler(uint8_t data_type);
+PointConvertHandler GetExtendedConvertHandler(uint8_t data_type);
 uint8_t *LivoxPointToPxyzrtl(uint8_t *point_buf, LivoxEthPacket *eth_packet,
     ExtrinsicParameter &extrinsic, uint32_t line_num);
 void ZeroPointDataOfStoragePacket(StoragePacket* storage_packet);
