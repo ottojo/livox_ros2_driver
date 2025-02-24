@@ -27,7 +27,6 @@
 #ifndef LIVOX_ROS_DRIVER_LDS_H_
 #define LIVOX_ROS_DRIVER_LDS_H_
 
-#include <cstdint>
 #include <math.h>
 #include <stdint.h>
 #include <stdio.h>
