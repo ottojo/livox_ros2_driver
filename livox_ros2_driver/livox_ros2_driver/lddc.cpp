@@ -312,7 +312,10 @@ uint32_t Lddc::PublishExtendedPointcloud2(LidarDataQueue *queue, uint32_t packet
     /** Use the first packet timestamp as pointcloud2 msg timestamp */
     if (published_packet == 0) {
       first_timestamp = timestamp;
-      cloud.header.stamp = rclcpp::Time(timestamp);
+      // TODO: This isn't actually the timestamp of first package reception,
+      // apparently some buffering happens before (or this processing only runs
+      // once enough data is queued for the entire pointcloud).
+      cloud.header.stamp = cur_node_->now();
     }
     uint32_t single_point_num = storage_packet.point_num * echo_num;
 
@@ -333,7 +336,6 @@ uint32_t Lddc::PublishExtendedPointcloud2(LidarDataQueue *queue, uint32_t packet
       std::terminate();
     }
 
-    // for each point: set timestamp to timestamp + i * point_interval
     int i = 0;
     for(auto point = point_base_start; point < reinterpret_cast<LivoxPointXYZRTagLTime*>(point_base); point++){
       point->time = timestamp + i * point_interval - first_timestamp;
@@ -357,9 +359,6 @@ uint32_t Lddc::PublishExtendedPointcloud2(LidarDataQueue *queue, uint32_t packet
       std::dynamic_pointer_cast<rclcpp::Publisher
       <sensor_msgs::msg::PointCloud2>>(GetCurrentPublisher(handle));
   if (kOutputToRos == output_type_) {
-    // Override time stamp definition with ROS time.
-    // TODO: this is not good? why not receive TS of first packet? -> differentiate between lidar TS (since boot) and PC TS
-    // cloud.header.stamp = cur_node_->now();
     publisher->publish(cloud);
   } else{
     std::terminate();
