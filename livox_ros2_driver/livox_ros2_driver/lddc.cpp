@@ -294,6 +294,7 @@ uint32_t Lddc::PublishExtendedPointcloud2(LidarDataQueue *queue, uint32_t packet
   uint32_t point_interval = GetPointInterval(lidar->info.type);
   uint32_t echo_num = GetEchoNumPerPoint(lidar->raw_data_type);
   uint32_t is_zero_packet = 0;
+  uint64_t first_timestamp = 0;
   while ((published_packet < packet_num) && !QueueIsEmpty(queue)) {
     QueuePrePop(queue, &storage_packet);
     LivoxEthPacket *raw_packet =
@@ -310,11 +311,12 @@ uint32_t Lddc::PublishExtendedPointcloud2(LidarDataQueue *queue, uint32_t packet
     }
     /** Use the first packet timestamp as pointcloud2 msg timestamp */
     if (published_packet == 0) {
+      first_timestamp = timestamp;
       cloud.header.stamp = rclcpp::Time(timestamp);
     }
     uint32_t single_point_num = storage_packet.point_num * echo_num;
 
-    auto point_base_start = point_base;
+    auto point_base_start = reinterpret_cast<LivoxPointXYZRTagLTime*>(point_base);
 
     if (kSourceLvxFile != data_source) {
       PointConvertHandler pf_point_convert =
@@ -333,9 +335,8 @@ uint32_t Lddc::PublishExtendedPointcloud2(LidarDataQueue *queue, uint32_t packet
 
     // for each point: set timestamp to timestamp + i * point_interval
     int i = 0;
-    for(auto point = point_base_start; point < point_base; point++){
-      auto lidar_point = reinterpret_cast<LivoxPointXYZRTagLTime *>(point);
-      lidar_point->time = timestamp + i * point_interval;
+    for(auto point = point_base_start; point < reinterpret_cast<LivoxPointXYZRTagLTime*>(point_base); point++){
+      point->time = timestamp + i * point_interval - first_timestamp;
       i++;
     }
 
@@ -724,7 +725,7 @@ void Lddc::DistributeLidarData(void) {
 
 std::shared_ptr<rclcpp::PublisherBase> Lddc::CreatePublisher(uint8_t msg_type,
     std::string &topic_name, uint32_t queue_size) {
-    if (kPointCloud2Msg == msg_type) {
+    if (kPointCloud2Msg == msg_type || kExtendedPointCloud2Msg == msg_type) {
       RCLCPP_INFO(cur_node_->get_logger(),
           "%s publish use PointCloud2 format", topic_name.c_str());
       return cur_node_->create_publisher<
@@ -748,7 +749,8 @@ std::shared_ptr<rclcpp::PublisherBase> Lddc::CreatePublisher(uint8_t msg_type,
       return cur_node_->create_publisher<sensor_msgs::msg::Imu>(topic_name,
           queue_size);
     } else {
-      std::shared_ptr<rclcpp::PublisherBase>null_publisher(nullptr);
+      std::shared_ptr<rclcpp::PublisherBase> null_publisher(nullptr);
+      RCLCPP_WARN(cur_node_->get_logger(), "Not creating ROS publisher for format %d", msg_type);
       return null_publisher;
     }
 }
