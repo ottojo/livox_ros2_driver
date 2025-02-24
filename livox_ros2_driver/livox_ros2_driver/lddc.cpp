@@ -680,7 +680,9 @@ void Lddc::PollingLidarPointCloudData(uint8_t handle, LidarDevice *lidar) {
 
     if (kPointCloud2Msg == transfer_format_) {
       PublishPointcloud2(p_queue, onetime_publish_packets, handle);
-    } else if (kLivoxCustomMsg == transfer_format_) {
+    } else if (kExtendedPointCloud2Msg == transfer_format_) {
+      PublishExtendedPointcloud2(p_queue, onetime_publish_packets, handle);
+    }  else if (kLivoxCustomMsg == transfer_format_) {
       PublishCustomPointcloud(p_queue, onetime_publish_packets, handle);
     } else if (kPclPxyziMsg == transfer_format_) {
       PublishPointcloudData(p_queue, onetime_publish_packets, handle);
