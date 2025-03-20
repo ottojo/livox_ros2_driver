@@ -24,6 +24,7 @@
 
 #include "lds.h"
 
+#include <cstdint>
 #include <math.h>
 #include <stdio.h>
 #include <string.h>
@@ -72,15 +73,13 @@ uint64_t RawLdsStampToNs(LdsStamp &timestamp, uint8_t timestamp_type) {
   }
 }
 
-uint64_t GetStoragePacketTimestamp(StoragePacket *packet, uint8_t data_src) {
-  LivoxEthPacket *raw_packet =
-      reinterpret_cast<LivoxEthPacket *>(packet->raw_data);
+uint64_t GetEthPacketTimestamp(LivoxEthPacket *raw_packet, uint8_t data_src, uint64_t time_rcv) {
   LdsStamp timestamp;
   memcpy(timestamp.stamp_bytes, raw_packet->timestamp, sizeof(timestamp));
 
   if (raw_packet->timestamp_type == kTimestampTypePps) {
     if (data_src != kSourceLvxFile) {
-      return (timestamp.stamp + packet->time_rcv);
+      return (timestamp.stamp + time_rcv);
     } else {
       return timestamp.stamp;
     }
@@ -108,6 +107,12 @@ uint64_t GetStoragePacketTimestamp(StoragePacket *packet, uint8_t data_src) {
     printf("Timestamp type[%d] invalid.\n", raw_packet->timestamp_type);
     return 0;
   }
+}
+
+uint64_t GetStoragePacketTimestamp(StoragePacket *packet, uint8_t data_src) {
+  LivoxEthPacket *raw_packet =
+      reinterpret_cast<LivoxEthPacket *>(packet->raw_data);
+  return GetEthPacketTimestamp(raw_packet, data_src, packet->time_rcv);
 }
 
 uint32_t CalculatePacketQueueSize(uint32_t interval_ms, uint8_t product_type,
@@ -280,6 +285,37 @@ static uint8_t *LivoxExtendRawPointToPxyzrtl(uint8_t *point_buf, \
     LivoxEthPacket *eth_packet, ExtrinsicParameter &extrinsic, \
     uint32_t line_num) {
   LivoxPointXyzrtl *dst_point = (LivoxPointXyzrtl *)point_buf;
+  uint32_t points_per_packet = GetPointsPerPacket(eth_packet->data_type);
+  LivoxExtendRawPoint *raw_point =
+      reinterpret_cast<LivoxExtendRawPoint *>(eth_packet->data);
+
+  uint8_t line_id = 0;
+  while (points_per_packet) {
+    RawPointConvert((LivoxPointXyzr *)dst_point, (LivoxRawPoint *)raw_point);
+    if (extrinsic.enable && IsTripleIntNoneZero(raw_point->x,
+        raw_point->y, raw_point->z)) {
+      PointXyz src_point = *((PointXyz *)dst_point);
+      PointExtrisincCompensation((PointXyz *)dst_point, src_point, extrinsic);
+    }
+    dst_point->tag = raw_point->tag;
+    if (line_num > 1) {
+      dst_point->line = line_id % line_num;
+    } else {
+      dst_point->line = 0;
+    }
+    ++raw_point;
+    ++dst_point;
+    ++line_id;
+    --points_per_packet;
+  }
+
+  return (uint8_t *)dst_point;
+}
+
+static uint8_t *LivoxExtendRawPointToPxyzrtlTime(uint8_t *point_buf, \
+    LivoxEthPacket *eth_packet, ExtrinsicParameter &extrinsic, \
+    uint32_t line_num) {
+  LivoxPointXYZRTagLTime *dst_point = (LivoxPointXYZRTagLTime *)point_buf;
   uint32_t points_per_packet = GetPointsPerPacket(eth_packet->data_type);
   LivoxExtendRawPoint *raw_point =
       reinterpret_cast<LivoxExtendRawPoint *>(eth_packet->data);
@@ -526,6 +562,25 @@ const PointConvertHandler to_pxyzi_handler_table[kMaxPointDataType] = {
 PointConvertHandler GetConvertHandler(uint8_t data_type) {
   if (data_type < kMaxPointDataType)
     return to_pxyzi_handler_table[data_type];
+  else
+    return nullptr;
+}
+
+const PointConvertHandler to_pxyzit_handler_table[kMaxPointDataType] = {
+nullptr,                          /**< Cartesian coordinate point cloud. */
+nullptr,                          /**< Spherical coordinate point cloud. */
+LivoxExtendRawPointToPxyzrtlTime, /**< Extend cartesian coordinate point cloud. */
+nullptr,                          /**< Extend spherical coordinate point cloud. */
+nullptr,                          /**< Dual extend cartesian coordinate  point cloud. */
+nullptr,                          /**< Dual extend spherical coordinate point cloud. */
+nullptr,                          /**< IMU data. */
+nullptr,                          /**< Triple extend cartesian coordinate  point cloud. */
+nullptr,                          /**< Triple extend spherical coordinate  point cloud. */
+};
+
+PointConvertHandler GetExtendedConvertHandler(uint8_t data_type) {
+  if (data_type < kMaxPointDataType)
+    return to_pxyzit_handler_table[data_type];
   else
     return nullptr;
 }

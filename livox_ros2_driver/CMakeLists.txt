@@ -30,6 +30,7 @@ find_package(ament_cmake_auto REQUIRED)
 ament_auto_find_build_dependencies()
 find_package(PCL REQUIRED)
 find_package(livox_sdk REQUIRED)
+find_package(backward_ros REQUIRED)
 
 # check apr
 find_package(PkgConfig)
