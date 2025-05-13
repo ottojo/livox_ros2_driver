@@ -1,0 +1,3 @@
+[submodule "livox_sdk_vendor/external/livox_sdk"]
+	path = livox_sdk_vendor/external/livox_sdk
+	url = https://github.com/ottojo/Livox-SDK.git

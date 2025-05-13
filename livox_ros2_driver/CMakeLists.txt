@@ -29,7 +29,7 @@ message(STATUS "${PROJECT_NAME} version: ${LIVOX_ROS_DRIVER_VERSION}")
 find_package(ament_cmake_auto REQUIRED)
 ament_auto_find_build_dependencies()
 find_package(PCL REQUIRED)
-find_package(livox_sdk REQUIRED)
+find_package(livox_sdk_vendor REQUIRED)
 find_package(backward_ros REQUIRED)
 
 # check apr
@@ -39,9 +39,6 @@ if (APR_FOUND)
 	message(${APR_INCLUDE_DIRS})
 	message(${APR_LIBRARIES})
 endif (APR_FOUND)
-
-## make sure the livox_sdk_static library is installed
-find_library(LIVOX_SDK_LIBRARY liblivox_sdk_static.a /usr/local/lib)
 
 ## PCL library
 link_directories(${PCL_LIBRARY_DIRS})
@@ -85,7 +82,6 @@ target_include_directories(${PROJECT_NAME} PUBLIC
 
 # link libraries
 target_link_libraries(${PROJECT_NAME}
-	${livox_sdk_LIBRARIES}
 	${Boost_LIBRARY}
 	${PCL_LIBRARIES}
 	${APR_LIBRARIES}
@@ -94,6 +90,7 @@ target_link_libraries(${PROJECT_NAME}
 #  ${std_msgs_LIBRARIES}
 #  ${Boost_SYSTEM_LIBRARY}
 
+ament_target_dependencies(${PROJECT_NAME} livox_sdk_vendor)
 
 rclcpp_components_register_node(${PROJECT_NAME}
   PLUGIN "livox_ros::LivoxDriver"
